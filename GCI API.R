@@ -43,7 +43,7 @@ for(i in indicators){
 # intellectual property: WEF_GCIHH_EOSQ052
 # rnd expenditure: WEF_GCI_RDSPENDING
 
-i <- "WEF_GCI_MULTISTAKECOLLAB"
+#i <- "WEF_GCI_MULTISTAKECOLLAB"
 
 
 ADII_GCI_indicators <- c("WEF_GCI_MULTISTAKECOLLAB", "WEF_GCI_EOSQ508", "WEF_GCI_GRADSKILLS", "WEF_GCIHH_EOSQ089",

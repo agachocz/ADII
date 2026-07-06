@@ -3,15 +3,15 @@ library(tidyverse)
 # based on clean_data from data preparation.R
 
 #sort(colnames(clean_data))
-summary(clean_data)
-
+#summary(clean_data)
 #codelist %>% filter(country.name.en %in% adii$entity) %>% select(un.region.name)
 
 adii <- clean_data %>% pivot_longer(-entity, values_to = "value", names_to = "indicator") %>%
   mutate(pillar = substr(indicator, 1, 2)) %>% group_by(entity, pillar) %>% 
   summarise(value = mean(value, na.rm = T)/20*100) %>% pivot_wider(id_cols = entity, names_from = pillar, values_from = value) %>%
   mutate(Index = (I1+I2+I3+I4+I5+I6)/6) %>% arrange(entity)
-  
+
+# manual pillar construction  
 #  mutate(
 #  P1 = I11_digital_trade + I12_digital_certificates + I13_trade_procedures + I14_logistic_infrastructure + I15_logistic_services,
 #  P2 = I21_data_protection + I22_legal + I23_Institutional + I24_Technical + I25_Cooperation,
@@ -21,12 +21,16 @@ adii <- clean_data %>% pivot_longer(-entity, values_to = "value", names_to = "in
 #  P6 = I61_mobile + I62_internet_use + I63_gov_services + I64_gov_responses + I65_innovation_framework
 #  ) %>% mutate(Index = (P1+P2+P3+P5+P6)/6) %>% arrange(entity)
 
+
+# add continents
 region_names = codelist %>% filter(country.name.en %in% adii$entity) %>% arrange(country.name.en) %>%
   select(country.name.en, un.region.name)
 
 adii <- adii %>% left_join(region_names, by = c("entity" = "country.name.en")) %>%
   rename(region = un.region.name)
 
+
+# for the analysis in the paper
 adii %>% mutate(region = if_else(region == "Oceania", "Asia", region)) %>%
   pivot_longer(-c(entity, region), values_to = "value", names_to = "pillar") %>%
   group_by(pillar) %>%
@@ -36,18 +40,11 @@ adii %>% group_by(region) %>% tally()
 adii %>% #filter(region == "Asia") %>% 
   select(entity, Index, region) %>% arrange(desc(Index))
 
-europe <- subset(codelist, un.region.name == "Europe", select = "country.name.en")
-asia <- subset(codelist, un.region.name == "Asia", select = "country.name.en") 
-africa <- subset(codelist, un.region.name == "Africa", select = "country.name.en")
-oceania <- subset(codelist, un.region.name == "Oceania", select = "country.name.en")
-americas <- subset(codelist, un.region.name == "Americas", select = "country.name.en")
 
-unique(codelist$un.region.name)
-colnames(codelist)
 
 # compare with the original values
 
-adii_asean <- read.csv("paper 3/data/ADII 2_0 scores.csv")
+adii_asean <- read.csv("data/composite indices/ADII 2_0 scores.csv")
 colnames(adii_asean) <- c("entity", "P1_org", "P2_org", "P3_org", "P4_org", "P5_org", "P6_org")
 adii_asean <- adii_asean  %>% mutate(entity = countryname(entity, "country.name", "country.name"))
 adii_asean$Index_org <- rowMeans(adii_asean[,-1])
@@ -63,12 +60,12 @@ comparison %>% group_by(entity) %>% summarise(
 
 cor(na.omit(comparison[,-1])) # most have pretty high correlation, but the number of cases is low
 
-cor(comparison$P6, comparison$P6_org)
 
 # for table in the article
+cor(comparison$Index, comparison$Index_org) # correlations
+mean(abs(comparison$Index_org-comparison$Index)/comparison$Index_org)*100 # percentage error
+mean((comparison$Index_org-comparison$Index)) # mean error
 
-mean(abs(comparison$Index_org-comparison$Index)/comparison$Index_org)*100
-mean((comparison$Index_org-comparison$Index))
 
 # draw a map
 
@@ -106,7 +103,7 @@ map_adii
 
 # compare with DESI and ICT - overall a pretty good similarity
 
-desi <- read.csv("compound indicators/DESI.csv") %>% filter(time_period == 2022, indicator == "desi_total") %>%
+desi <- read.csv("data/composite indices/DESI.csv") %>% filter(time_period == 2022, indicator == "desi_total") %>%
   mutate(ref_area = if_else(ref_area == "EL", "GR", ref_area)) %>%
   mutate(entity = countrycode(ref_area, origin = "iso2c", destination = "country.name"),
          DESI = value*100) %>% filter(!is.na(entity)) %>%
@@ -116,9 +113,9 @@ desi <- read.csv("compound indicators/DESI.csv") %>% filter(time_period == 2022,
 #unique(desi$indicator)
 
 desi_adii <- desi %>% inner_join(adii, by = "entity")
-cor(desi_adii$DESI, desi_adii$Index, method = "p") # pretty good!
+cor(desi_adii$DESI, desi_adii$Index, method = "p")
 
-idi <- read.csv("paper 3/data/IDI 2023 Scores.csv") %>%
+idi <- read.csv("data/composite indices/IDI 2023 Scores.csv") %>%
   mutate(entity = countryname(Economy, "country.name")) %>% 
   select(entity, IDI = IDI.Score)
 
@@ -128,7 +125,7 @@ cor(idi_adii$IDI, idi_adii$Index, method = "s")
 summary(idi_adii)
 
 
-dii <- read.csv("compound indicators/DII.csv", sep = ";") %>% 
+dii <- read.csv("data/composite indices/DII.csv", sep = ";") %>% 
   select(entity = Entity, DII = Digital.Evolution.Score) %>%
   mutate(entity = countryname(entity, "country.name"))
 
