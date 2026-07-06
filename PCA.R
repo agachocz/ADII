@@ -26,18 +26,19 @@ pcaCharts <- function(x) {
   screeplot(x,type="l")
   par(mfrow=c(1,1))
 }
-pcaCharts(pc)
+
 
 # PCA
 # I should probably use the data availability as a cue on which indicators should be included...
 
-nas <- colSums(is.na(all_data))
+nas <- colSums(is.na(all_data)) # number of missing data per indicator
 
 pc <- prcomp(na.omit(clean_data[,P5]), center = TRUE, scale. = TRUE)
 summary(pc)
 
 cor(pc$x[,1:3], na.omit(clean_data[,P5]))
 
+# selected indicators:
 # P6: I63_gov_services, I65_innovation_framework, I61_mobile | instead of I64_gov_responses use I65
 # P5: I55_intellectual_property, I54_ease_of_business, I52_rnd_expenditure | can change I54 for I53_innovative_companies
 # P4: I44_digital_skills, I41_stem_graduates, I42_knowledge_emp
@@ -93,3 +94,11 @@ map_adii <- world_moll %>% left_join(adii_reduced, by = c("iso_a3_eh"="code"), m
   labs(fill = "ADII")
 
 map_adii
+
+
+# exporting datasets
+
+# all indicators, including countries with many missing data, that weren't used for ADII
+write.csv(all_data, "ADII datasets/ADII_indicators.csv")
+write.csv(adii, "ADII datasets/reconstructed_ADII.csv")
+write.csv(adii_reduced, "ADII datasets/reduced_ADII.csv")
